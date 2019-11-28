@@ -47,7 +47,18 @@ You can see SQL Agent job created with name "Warning: Replication Health" contai
 
 ## Execution of stored procedures
 
-OK so you are all set now and you can start enjoying new stored procedure. You can use it just for manual check if all subscribers using your distribution servers are working. Or you can use it in your further T-SQL development where replication state plays major role. What is prepared for you is using this procedure in SQL Agent job informing you where there is some problem.
+OK so you are all set now and you can start enjoying new stored procedure. You can use it just for manual check if all subscribers using your distribution servers are working. Or you can use it in your further T-SQL development where replication state plays major role. What is prepared for you is using this procedure in SQL Agent job informing you where there is some problem. Procedure also producing resultset formatted as HTML table element containing data. HTML table from output parameter @p_HTMLTableResults can be used in HTML context for example in notification email.
+
+### Parameters
+
+Stored procedure has some input paramaters that are optional to use and has their default values.
+
+Input:
+*	**@p_SuppressResults** *BIT* – You can use it for supressing resultset.Useful when you just want to check if alert state happening but no more information needed. By default set to 0.
+Output:
+*	**@p_HTMLTableResults** *NVARCHAR(MAX)* – This parameter contains resultset formatted as HTML table. Use it in HTML context to directly put results into website or HTML formatted email message.
+*	**@p_RiseAlert** *BIT*  - This parameter is holding flag if some alert situation is happening with subscriptions. You can use it to pass this flag out of stored procedure and use it in your firther program workflow.
+
 
 ### Simple run for checking actual state (no parameters)
 ```
@@ -57,9 +68,11 @@ EXEC [distribution].[dbo].[usp_ReplicationMonitor]
 ### Check if there is some problem (output parameter @p_RiseAlert)
 ```
 DECLARE @RiseAlert BIT	
+DECLARE @ResultTable NVARCHAR(MAX)
 
 EXEC [distribution].[dbo].[usp_ReplicationMonitor] 
-  @p_RiseAlert = @RiseAlert OUTPUT		
+  @p_RiseAlert = @RiseAlert OUTPUT,
+  @p_HTMLTableResults = @ResultTable OUTPUT		
 
 SELECT @RiseAlert
 ```
@@ -67,10 +80,12 @@ SELECT @RiseAlert
 ### Supress result set outcome (parameter @p_SuppressResults set to 1)
 ```
 DECLARE @RiseAlert BIT	
+DECLARE @ResultTable NVARCHAR(MAX)
 
 EXEC [distribution].[dbo].[usp_ReplicationMonitor] 
   @p_SuppressResults = 1, 
-  @p_RiseAlert = @RiseAlert OUTPUT		
+  @p_RiseAlert = @RiseAlert OUTPUT,  
+  @p_HTMLTableResults = @ResultTable OUTPUT		
 
 SELECT @RiseAlert
 ```
@@ -78,7 +93,9 @@ You just don't get any result set if there is some not properly working subscrip
 
 ### Results
 
-Stored procedure will return table with not properly working subscriptions in your replication setup. Then you can focus on solving problems causing this state. Results can be supressed by using @p_SuppressResults parameter. In such case just use value of output parameter in your workflow and do some reaction on this state.
+Stored procedure will return table with not properly working subscriptions in your replication setup. Then you can focus on solving problems causing this state. Results can be supressed by using *@p_SuppressResults* parameter. In such case just use value of output parameter in your workflow and do some reaction on this state.
+
+Use content of *@p_HTMLTableResults* to insert HTML table formatted resultset in some HTML context.
 
 ## Possible problems
 There was testing of the solution for debugging and tuning purposes and all known problems has been fixed already, but as everything also this script can cause some issues in different environments. 
