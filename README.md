@@ -20,8 +20,7 @@ For regular checking SQL Agent job is created, it only contains one step for cal
 Nice article about configuration of Database Mail can be found on [Brent Ozar's website](https://www.brentozar.com/blitz/database-mail-configuration/).
 
 ## Deployment 
-
-Only thing you have to do is to copy [deplyment script](SQL%20Server%20Replication%20monitoring.sql). Open it in SQL Server Management Studio and run it against SQL Server instance you are connected to or use multiquery from Registered Servers. Running script using multi-query is especially benefical when you are using multiple distribution servers, you will avoid unnecesarry clicking when connecting to every replica and running one by one. 
+Only thing you have to do is to copy [deplyment script](SQL%20Server%20Replication%20Monitoring.sql). Open it in SQL Server Management Studio and run it against SQL Server instance you are connected to or use multiquery from Registered Servers. Running script using multi-query is especially benefical when you are using multiple distribution servers, you will avoid unnecesarry clicking when connecting to every replica and running one by one. 
 
 ### Direct messages
 
