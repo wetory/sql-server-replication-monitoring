@@ -27,8 +27,8 @@ DECLARE @AlertRecipients		NVARCHAR(512)
 DECLARE @DbMailProfile			SYSNAME
 
 -- you can change folowing variables according to your needs
-SET @AlertRecipients = 'trybnicky@inwk.com'
-SET @DbMailProfile	 = 'mail.iwprint.com'	
+SET @AlertRecipients = '<your email addresses here>'
+SET @DbMailProfile	 = '<your database mail profile here>'	
 
 
 PRINT 'SQL Server Replication Health Monitoring - deployment of solution'

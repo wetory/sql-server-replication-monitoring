@@ -1,5 +1,5 @@
-# SQL Server Database Restore
-Standardized database restore, doing some of pre-restore checks and post-restore configurations with restored databse. Doing also refresh of Availability Group databases, means restores into databases that are part of Availability Group and joining them back. More detailed info within [documentation file](docs/SQL%20Server%20Database%20Restore%20-%20documentation.pdf).
+# SQL Server Replication Monitoring
+Simple solution for regular checking of replication subscriptions based on querying system tables on distribution server. Require Database Mail to notify you everytime some subscription is not running or containing any warning. More detailed info within [documentation file](docs/SQL%20Server%20Replcation%20Monitoring%20-%20documentation.pdf).
 
 Table of contents:
   * [Technical preview](#technical-preview)
@@ -10,30 +10,32 @@ Table of contents:
 
 ## Technical preview
 
-Whole solution consist of two stored procedures, that can be called directly or from SQL Agent job steps. One procedure is needed for all restore scenarios, and another only needed on Availability Group (only AG in further writting) secondary replicas to be able to join database to AG. 
+Whole solution consist of one view and one stored procedure created in distribution database. Procedure can be called directly or from SQL Agent job steps. View is just for simplyfying code as it contains longer SELECT statement querying system tables in distribution database. Stored procedure is querying this view and deciding based on seuncribers state or warnings if to rise alert or not. By default you can see not properly working subscriptions in result set.  
 
-*	RestoreDatabase – perform every restore
-*	AddDatabaseOnSecondary – only needed on secondary replicas
+*	v_ReplicationMonitorData – querying systems table
+*	usp_ReplicationMonitor – logic to decide if rise alert based on monitoring data from above view
 
-Both procedures using pure T-SQL approach, I know similar operations can be performed by PowerShell and maybe more efficiently, but I like T-SQL way. 
-
-Both procedures cooperating with Ola Halengreen’s maintenance solution procedures (visit here for more details https://ola.hallengren.com/), using its CommandLog table for tracking operations done during execution and CommandExecute for executing commands wtihin script. Both table and procedure is created during deployment and you are informed about it.
+For regular checking SQL Agent job is created, it only contains one step for calling above mentioned stored proceedure and send notification to given emails via given database mail profile. You have to properly configure Database Mail if you want to use notification on regular basis. Nice article about configuration of Database Mail can be found on [Brent Ozar's website](https://www.brentozar.com/blitz/database-mail-configuration/).
 
 ## Deployment 
 
-Only thing you have to do is to copy [deplyment script](SQL%20Server%20Database%20Restore.sql). Copy script to SQL Server Management Studio and run it aganst SQL Server instance you are connected to or use multiquery from Registered Servers. Running script using multi-query is especially benefical when creating procedures on AG replicas, you will avoid unnecesarry clicking when connecting to every replica and running one by one. 
+Only thing you have to do is to copy [deplyment script](SQL%20Server%20Replication%20monitoring.sql). Open it in SQL Server Management Studio and run it against SQL Server instance you are connected to or use multiquery from Registered Servers. Running script using multi-query is especially benefical when you are using multiple distribution servers, you will avoid unnecesarry clicking when connecting to every replica and running one by one. 
 
 ### Direct messages
 
 After proper execution you can check messages for detailed steps which have been done over instance and also for possible related error messages.
 
+### Views
+
+You can see new view [dbo.v_ReplicationMonitorData](views/v_ReplicationMonitorData.sql) created in dstribution database.
+
 ### Stored procedures
 
-You can see two new stored procedures in master database + CommandExecute procedure from Ola Halengreen (if not there already)
+You can see one new stored procedure [dbo.usp_ReplicationMonitor](stored%20procedures/usp_ReplicationMonitor.sql) in dstribution database.
 
-### Tables
+### SQL Agent jobs
 
-There is one table created within deployment – CommandLog if it already did not exist before deployment. It is borrowed from Ola’s maintenance solution. If you are using Ola Halengreen’s maitnenance solution you can just see new records related to restores in this table.
+You can see SQL Agent job created with name "Warning: Replication Health" containing one step for calling stored procedure [dbo.usp_ReplicationMonitor](stored%20procedures/usp_ReplicationMonitor.sql). Just kee in mind it is created without any schedule so you have to pick what fits best for your requirements.
 
 ## Execution of stored procedures
 
@@ -41,53 +43,39 @@ OK so you are all set now and you can start enjoying new stored procedures. You 
 
 For detailed description of what is each procedure doing behind the scenes look into [documentation file](docs/SQL%20Server%20Database%20Restore%20-%20documentation.pdf) or go through messages after its execution. 
 
-### Restore of database and set up autogrowth based on model database*
+### Simple run for checking actual state (no parameters)*
 ```
-EXEC [master].[dbo].[RestoreDatabase]
-@BackupFile = N'\\Path\To\BackupFile\Backup.bak',
-@Database = N'TestDB',
-@CheckModel = 'Y', 
-@LogToTable = 'Y'
-```
-*@CheckModel parameter available since v1.2
-
-### Restore of database that is joined in Availability Group
-```
-EXEC [master].[dbo].[RestoreDatabase]
-@BackupFile = N'\\Path\To\BackupFile\Backup.bak',
-@Database = N'TestDB',
-@AvailabilityGroup = N'AvailabilityGroupName',
-@SharedFolder = N'\\Path\To\AGShare',
-@LogToTable = 'Y'
+EXEC [distribution].[dbo].[usp_ReplicationMonitor]
 ```
 
-### Executing stored procedure AddDatabaseOnSecondary
-Folowing command is constructed automatically within RestoreDatabase execution but you can  call procedure directly if you want:
+### Check if there is some problem (output parameter @p_RiseAlert)
 ```
-EXEC [master].[dbo].[AddDatabaseOnSecondary]
-@FullBackupFile = N'\\Path\To\BackupFile\FullBackup.bak',
-@TlogBackupFile = N'\\Path\To\BackupFile\TlogBackup.trn',
-@Database = N'TestDB',
-@AvailabilityGroup = N'AvailabilityGroupName',
-@LogToTable = 'Y'		
+DECLARE @RiseAlert BIT	
+EXEC [distribution].[dbo].[usp_ReplicationMonitor] @p_RiseAlert = @RiseAlert OUTPUT		
+SELECT @RiseAlert
 ```
 
-### Messages
+### Supress result set outcome (parameter @p_SuppressResults set to 1)
+```
+DECLARE @RiseAlert BIT	
+EXEC [distribution].[dbo].[usp_ReplicationMonitor] @p_SuppressResults = 1, @p_RiseAlert = @RiseAlert OUTPUT		
+SELECT @RiseAlert
+```
+You just don't get any result set if there is some not properly working subscriptions. Useful for pure programatic use.
 
-Stored procedures are informing you via messages about its execution steps in pretty detailed info messages. Also you can find possible error desctiptions in messages after execution failed.
+### Results
+
+Stored procedure will return table with not properly working subscriptions in your replication setup. Then you can focus on solving problems causing this state. Results can be supressed by using @p_SuppressResults parameter. In such case just use value of output parameter in your workflow and do some reaction on this state.
 
 ## Possible problems
-There was testing of the solution ongoing for several weeks for debugging and tuning purposes and all known problems has been fixed already, but as everything also this script can cause some issues in different environments. 
+There was testing of the solution for debugging and tuning purposes and all known problems has been fixed already, but as everything also this script can cause some issues in different environments. 
 
 I’m assuming only following possible issues:
-* problems with accessing secondary replica via linked server - [Login failed for User ‘NT AUTHORITY\ANONYMOUS LOGON’](https://blog.sqlauthority.com/2015/06/13/sql-server-login-failed-for-user-nt-authorityanonymous-logon/)
-*	When executing from SQL Agent job, ensure that account that is used for execution has sufficient permissions, especially in case restoring database into Avaialability Group as there are actions done on all secondary replicas.
-
-And some other possible problems can be related to OH stuff in the solution so, please be so kind and try to check this FAQ https://ola.hallengren.com/frequently-asked-questions.html first before asking me directly.
+* problems with not properly working Database Mail - if you are using SQL Server 2016 there is [known bug](https://support.microsoft.com/en-hk/help/3186435/sql-server-2016-database-mail-doesn-t-work-when-net-framework-3-5) fixed in CUs 
+* [Failed to initialize sqlcmd library with error number -2147467259](https://blog.sqlauthority.com/2015/06/13/sql-server-login-failed-for-user-nt-authorityanonymous-logon/)
 
 ## Versions
-* v1.1 - first sharable tested solution major bugs fixed
-* v1.2 - added possiblity to set autogrowth for restored database based on model database settings (RestoreDatabase stored procedure)
+* v1.0 - first sharable tested solution major bugs fixed
 
 ## Reporting issues
 
