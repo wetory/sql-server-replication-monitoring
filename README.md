@@ -12,8 +12,8 @@ Table of contents:
 
 Whole solution consist of one view and one stored procedure created in distribution database. Procedure can be called directly or from SQL Agent job steps. View is just for simplyfying code as it contains longer SELECT statement querying system tables in distribution database. Stored procedure is querying this view and deciding based on seuncribers state or warnings if to rise alert or not. By default you can see not properly working subscriptions in result set.  
 
-*	v_ReplicationMonitorData – querying systems table
-*	usp_ReplicationMonitor – logic to decide if rise alert based on monitoring data from above view
+*	**v_ReplicationMonitorData** – querying systems table
+*	**usp_ReplicationMonitor** – logic to decide if rise alert based on monitoring data from above view
 
 For regular checking SQL Agent job is created, it only contains one step for calling above mentioned stored proceedure and send notification to given emails via given database mail profile. You have to properly configure Database Mail if you want to use notification on regular basis. 
 
