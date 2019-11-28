@@ -26,7 +26,7 @@ Just set script run variables to match your environment needs. Find folowing cod
 
 ```
 SET @AlertRecipients = '<your email addresses here>'		
-SET @DbMailProfile	 = '<your database mail profile here>'
+SET @DbMailProfile = '<your database mail profile here>'
 ```
 
 ### Direct messages
