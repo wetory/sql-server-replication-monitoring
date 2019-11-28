@@ -1,5 +1,5 @@
 # SQL Server Replication Monitoring
-Simple solution for regular checking of replication subscriptions based on querying system tables on distribution server. Require Database Mail to notify you everytime some subscription is not running or containing any warning. More detailed info within [documentation file](docs/SQL%20Server%20Replcation%20Monitoring%20-%20documentation.pdf).
+Simple solution for regular checking of replication subscriptions based on querying system tables on distribution server. Require Database Mail to notify you everytime some subscription is not running or containing any warning. More detailed info within [documentation file](docs/SQL%20Server%20Replication%20Monitoring%20-%20documentation.pdf).
 
 Table of contents:
   * [Technical preview](#technical-preview)
@@ -51,17 +51,21 @@ EXEC [distribution].[dbo].[usp_ReplicationMonitor]
 ### Check if there is some problem (output parameter @p_RiseAlert)
 ```
 DECLARE @RiseAlert BIT	
+
 EXEC [distribution].[dbo].[usp_ReplicationMonitor] 
   @p_RiseAlert = @RiseAlert OUTPUT		
+
 SELECT @RiseAlert
 ```
 
 ### Supress result set outcome (parameter @p_SuppressResults set to 1)
 ```
 DECLARE @RiseAlert BIT	
+
 EXEC [distribution].[dbo].[usp_ReplicationMonitor] 
   @p_SuppressResults = 1, 
   @p_RiseAlert = @RiseAlert OUTPUT		
+
 SELECT @RiseAlert
 ```
 You just don't get any result set if there is some not properly working subscriptions. Useful for pure programatic use.
