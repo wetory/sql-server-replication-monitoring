@@ -42,7 +42,7 @@ You can see SQL Agent job created with name "Warning: Replication Health" contai
 
 OK so you are all set now and you can start enjoying new stored procedure. You can use it just for manual check if all subscribers using your distribution servers are working. Or you can use it in your further T-SQL development where replication state plays major role. What is prepared for you is using this procedure in SQL Agent job informing you where there is some problem.
 
-### Simple run for checking actual state (no parameters)*
+### Simple run for checking actual state (no parameters)
 ```
 EXEC [distribution].[dbo].[usp_ReplicationMonitor]
 ```
