@@ -22,6 +22,13 @@ Nice article about configuration of Database Mail can be found on [Brent Ozar's 
 ## Deployment 
 Only thing you have to do is to copy [deplyment script](SQL%20Server%20Replication%20Monitoring.sql). Open it in SQL Server Management Studio and run it against SQL Server instance you are connected to or use multiquery from Registered Servers. Running script using multi-query is especially benefical when you are using multiple distribution servers, you will avoid unnecesarry clicking when connecting to every replica and running one by one. 
 
+Just set script run variables to match your environment needs. Find folowing code at the beginning of deployment script. You have to specify recipients of email notifications and name of your configured database mail profile.
+
+```
+SET @AlertRecipients = '<your email addresses here>'		
+SET @DbMailProfile	 = '<your database mail profile here>'
+```
+
 ### Direct messages
 
 After proper execution you can check messages for detailed steps which have been done over instance and also for possible related error messages.
