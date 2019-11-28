@@ -15,7 +15,9 @@ Whole solution consist of one view and one stored procedure created in distribut
 *	v_ReplicationMonitorData – querying systems table
 *	usp_ReplicationMonitor – logic to decide if rise alert based on monitoring data from above view
 
-For regular checking SQL Agent job is created, it only contains one step for calling above mentioned stored proceedure and send notification to given emails via given database mail profile. You have to properly configure Database Mail if you want to use notification on regular basis. Nice article about configuration of Database Mail can be found on [Brent Ozar's website](https://www.brentozar.com/blitz/database-mail-configuration/).
+For regular checking SQL Agent job is created, it only contains one step for calling above mentioned stored proceedure and send notification to given emails via given database mail profile. You have to properly configure Database Mail if you want to use notification on regular basis. 
+
+Nice article about configuration of Database Mail can be found on [Brent Ozar's website](https://www.brentozar.com/blitz/database-mail-configuration/).
 
 ## Deployment 
 
@@ -39,9 +41,7 @@ You can see SQL Agent job created with name "Warning: Replication Health" contai
 
 ## Execution of stored procedures
 
-OK so you are all set now and you can start enjoying new stored procedures. You can use RestoreDatabase procedure to make common restore to standalone SQL Server database or you can use it to refresh database that is part of Availability Group
-
-For detailed description of what is each procedure doing behind the scenes look into [documentation file](docs/SQL%20Server%20Database%20Restore%20-%20documentation.pdf) or go through messages after its execution. 
+OK so you are all set now and you can start enjoying new stored procedure. You can use it just for manual check if all subscribers using your distribution servers are working. Or you can use it in your further T-SQL development where replication state plays major role. What is prepared for you is using this procedure in SQL Agent job informing you where there is some problem.
 
 ### Simple run for checking actual state (no parameters)*
 ```
@@ -51,14 +51,17 @@ EXEC [distribution].[dbo].[usp_ReplicationMonitor]
 ### Check if there is some problem (output parameter @p_RiseAlert)
 ```
 DECLARE @RiseAlert BIT	
-EXEC [distribution].[dbo].[usp_ReplicationMonitor] @p_RiseAlert = @RiseAlert OUTPUT		
+EXEC [distribution].[dbo].[usp_ReplicationMonitor] 
+  @p_RiseAlert = @RiseAlert OUTPUT		
 SELECT @RiseAlert
 ```
 
 ### Supress result set outcome (parameter @p_SuppressResults set to 1)
 ```
 DECLARE @RiseAlert BIT	
-EXEC [distribution].[dbo].[usp_ReplicationMonitor] @p_SuppressResults = 1, @p_RiseAlert = @RiseAlert OUTPUT		
+EXEC [distribution].[dbo].[usp_ReplicationMonitor] 
+  @p_SuppressResults = 1, 
+  @p_RiseAlert = @RiseAlert OUTPUT		
 SELECT @RiseAlert
 ```
 You just don't get any result set if there is some not properly working subscriptions. Useful for pure programatic use.
