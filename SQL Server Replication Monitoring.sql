@@ -21,7 +21,7 @@ SET NOCOUNT ON
 GO
 
 -- declare variables used in script
-DECLARE @ScriptVersion			NVARCHAR(16) = '1.0.1'
+DECLARE @ScriptVersion			NVARCHAR(16) = '1.0.2'
 DECLARE @Version				NUMERIC(18,10)
 DECLARE @AlertRecipients		NVARCHAR(512)
 DECLARE @DbMailProfile			SYSNAME
@@ -135,9 +135,9 @@ Execution example:
 		@p_HTMLTableResults = @ResultTable OUTPUT,
 		@p_RaiseAlert = @RaiseAlert OUTPUT
 */
-@p_SuppressResults		BIT = 0,				-- set to "1" to prevent returning resultset
-@p_HTMLTableResults		NVARCHAR(MAX) OUTPUT,	-- output parameter can be formatted as HTML table which is useful for notification emails
-@p_RaiseAlert			BIT = 0 OUTPUT			-- output parameter indicating problem
+@p_SuppressResults		BIT = 0,					-- set to "1" to prevent returning resultset
+@p_HTMLTableResults		NVARCHAR(MAX) = '' OUTPUT,	-- output parameter can be formatted as HTML table which is useful for notification emails
+@p_RaiseAlert			BIT = 0 OUTPUT				-- output parameter indicating problem
 AS
 BEGIN
 	SET NOCOUNT ON	

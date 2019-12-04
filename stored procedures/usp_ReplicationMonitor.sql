@@ -26,9 +26,9 @@ Execution example:
 		@p_HTMLTableResults = @ResultTable OUTPUT,
 		@p_RaiseAlert = @RaiseAlert OUTPUT
 */
-@p_SuppressResults		BIT = 0,				-- set to "1" to prevent returning resultset
-@p_HTMLTableResults		NVARCHAR(MAX) OUTPUT,	-- output parameter can be formatted as HTML table which is useful for notification emails
-@p_RaiseAlert			BIT = 0 OUTPUT			-- output parameter indicating problem
+@p_SuppressResults		BIT = 0,					-- set to "1" to prevent returning resultset
+@p_HTMLTableResults		NVARCHAR(MAX) = '' OUTPUT,	-- output parameter can be formatted as HTML table which is useful for notification emails
+@p_RaiseAlert			BIT = 0 OUTPUT				-- output parameter indicating problem
 AS
 BEGIN
 	SET NOCOUNT ON	
