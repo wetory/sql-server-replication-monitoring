@@ -105,7 +105,8 @@ I’m assuming only following possible issues:
 * [Failed to initialize sqlcmd library with error number -2147467259](https://blog.sqlauthority.com/2015/06/13/sql-server-login-failed-for-user-nt-authorityanonymous-logon/)
 
 ## Versions
-* v1.0 - first sharable tested solution major bugs fixed
+* v1.0.1 - first sharable tested solution major bugs fixed
+* v1.0.2 - default value for parameter @p_HTMLTableResults added in stored procedure usp_ReplicationMonitor
 
 ## Reporting issues
 
