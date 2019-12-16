@@ -13,9 +13,13 @@ Purpose: This procedure can be used for regular checking of replication status o
 	
 Author:	Tomas Rybnicky trybnicky@inwk.com
 Date of last update: 
-	v1.0 - 27.11.2019 - final state where all functionality tested and ready for production
+	v1.0.4 - 16.12.2019 - Log reader agent state checked and added to monitoring procedure results and @p_HTMLTableResults output parameter
+
 List of previous revisions:
-	v0.1 - 27.11.2019 - initial release of this stored procedure
+	v1.0.3 - 04.12.2019 - replication agent states columns added to view v_ReplicationMonitorData
+	v1.0.2 - 04.12.2019 - default value for parameter @p_HTMLTableResults added in stored procedure usp_ReplicationMonitor
+	v1.0.1 - 27.11.2019 - added possiblity to set autogrowth for restored database based on model database settings (RestoreDatabase stored procedure)
+	v0.0.0 - 27.11.2018 - Initial solution containing all not necesary scripting from testing and development work
 	
 Execution example:
 	DECLARE @RaiseAlert BIT
@@ -35,8 +39,9 @@ BEGIN
 
 	-- decision if alert to be risen
 	SELECT @p_RaiseAlert = COUNT(*) FROM [distribution].[dbo].[v_ReplicationMonitorData]
-	WHERE ReplicationWarning <> 0 -- some threshold is broken
-		OR ReplicationStatus NOT IN (1, 3, 4) -- 1 = Started, 3 = In progress, 4 = Idle 
+	WHERE ReplicationWarning <> 0				-- some threshold is broken
+		OR ReplicationStatus NOT IN (1, 3, 4)	-- 1 = Started, 3 = In progress, 4 = Idle 
+		OR LogReaderAgentState IN (2, 6)		-- 2 = succeeded (means that not running), 6 = failed. Log reader must be in progress or idle
 
 	-- result set for reporting - common resultset
 	IF @p_RaiseAlert <> 0 AND @p_SuppressResults = 0
@@ -59,11 +64,20 @@ BEGIN
 				WHEN 2 THEN 'Stopped'		
 				WHEN 1 THEN 'Started'			
 			END AS ReplicationStatus,
+			CASE LogReaderAgentState
+				WHEN 6 THEN 'Failed'
+				WHEN 5 THEN 'Retrying'
+				WHEN 4 THEN 'Idle'
+				WHEN 3 THEN 'In progress'
+				WHEN 2 THEN 'Not running'		
+				WHEN 1 THEN 'Started'			
+			END AS LogReaderAgentState,
 			ReplicationLatency,
 			LastSync AS LastSync
 		FROM v_ReplicationMonitorData
-		WHERE ReplicationWarning <> 0 -- some threshold is broken
-			OR ReplicationStatus NOT IN (1, 3, 4) -- 1 = Started, 3 = In progress, 4 = Idle 
+		WHERE ReplicationWarning <> 0
+			OR ReplicationStatus NOT IN (1, 3, 4)
+			OR LogReaderAgentState IN (2, 6)
 	END
 	
 	-- construct HTML table containing results
@@ -79,6 +93,7 @@ BEGIN
 				+ '	<th style="text-align:left">SubscriberDatabase</th>'
 				+ '	<th style="text-align:left">ReplicationType</th>'
 				+ '	<th style="text-align:left">ReplicationStatus</th>'
+				+ '	<th style="text-align:left">LogReaderAgentState</th>'
 				+ '	<th style="text-align:left">ReplicationLatency</th>'
 				+ '	<th style="text-align:left">LastSync</th>'
 				+ '</tr>'
@@ -92,6 +107,7 @@ BEGIN
 					+ '<td>' + SubscriberDatabase + '</td>'
 					+ '<td>' + ReplicationType + '</td>'
 					+ '<td>' + ReplicationStatus + '</td>'
+					+ '<td>' + LogReaderAgentState + '</td>'
 					+ '<td>' + CAST(ReplicationLatency AS VARCHAR(64)) + '</td>'
 					+ '<td>' + CAST(LastSync AS VARCHAR(64))
 				FROM (
@@ -113,11 +129,20 @@ BEGIN
 							WHEN 2 THEN 'Stopped'		
 							WHEN 1 THEN 'Started'			
 						END AS ReplicationStatus,
+						CASE LogReaderAgentState
+							WHEN 6 THEN 'Failed'
+							WHEN 5 THEN 'Retrying'
+							WHEN 4 THEN 'Idle'
+							WHEN 3 THEN 'In progress'
+							WHEN 2 THEN 'Not running'		
+							WHEN 1 THEN 'Started'			
+						END AS LogReaderAgentState,
 						ReplicationLatency,
 						LastSync AS LastSync
 					FROM v_ReplicationMonitorData
-					WHERE ReplicationWarning <> 0 -- some threshold is broken
-						OR ReplicationStatus NOT IN (1, 3, 4) -- 1 = Started, 3 = In progress, 4 = Idle
+					WHERE ReplicationWarning <> 0
+						OR ReplicationStatus NOT IN (1, 3, 4)
+						OR LogReaderAgentState IN (2, 6)
 					) AS d
 				FOR XML PATH( 'tr' ), TYPE ) AS VARCHAR(max) ) AS body
 			) AS bodycte
