@@ -13,9 +13,10 @@ Purpose: This procedure can be used for regular checking of replication status o
 	
 Author:	Tomas Rybnicky trybnicky@inwk.com
 Date of last update: 
-	v1.0.4 - 16.12.2019 - Log reader agent state checked and added to monitoring procedure results and @p_HTMLTableResults output parameter
+	v1.0.5 - 23.12.2019 - Monitoring refresh data procedure call added to procedure usp_ReplicationMonitor
 
 List of previous revisions:
+	v1.0.4 - 16.12.2019 - Log reader agent state checked and added to monitoring procedure results and @p_HTMLTableResults output parameter
 	v1.0.3 - 04.12.2019 - replication agent states columns added to view v_ReplicationMonitorData
 	v1.0.2 - 04.12.2019 - default value for parameter @p_HTMLTableResults added in stored procedure usp_ReplicationMonitor
 	v1.0.1 - 27.11.2019 - added possiblity to set autogrowth for restored database based on model database settings (RestoreDatabase stored procedure)
@@ -36,6 +37,9 @@ Execution example:
 AS
 BEGIN
 	SET NOCOUNT ON	
+
+	-- call replicaiton monitor refresh data system procedure
+	EXEC [sys].[sp_replmonitorrefreshjob] @iterations = 1
 
 	-- decision if alert to be risen
 	SELECT @p_RaiseAlert = COUNT(*) FROM [distribution].[dbo].[v_ReplicationMonitorData]

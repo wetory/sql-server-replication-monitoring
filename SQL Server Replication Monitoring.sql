@@ -10,9 +10,10 @@ It is creating following stuff in SQL Server instance:
 
 Author: Tomas Rybnicky 
 Date of last update: 
-	v1.0.4 - 16.12.2019 - Log reader agent state checked and added to monitoring procedure results and @p_HTMLTableResults output parameter
+	v1.0.5 - 23.12.2019 - Monitoring refresh data procedure call added to procedure usp_ReplicationMonitor
 
 List of previous revisions:
+	v1.0.4 - 16.12.2019 - Log reader agent state checked and added to monitoring procedure results and @p_HTMLTableResults output parameter
 	v1.0.3 - 04.12.2019 - replication agent states columns added to view v_ReplicationMonitorData
 	v1.0.2 - 04.12.2019 - default value for parameter @p_HTMLTableResults added in stored procedure usp_ReplicationMonitor
 	v1.0.1 - 27.11.2019 - added possiblity to set autogrowth for restored database based on model database settings (RestoreDatabase stored procedure)
@@ -24,14 +25,14 @@ SET NOCOUNT ON
 GO
 
 -- declare variables used in script
-DECLARE @ScriptVersion			NVARCHAR(16) = '1.0.3'
+DECLARE @ScriptVersion			NVARCHAR(16) = '1.0.5'
 DECLARE @Version				NUMERIC(18,10)
 DECLARE @AlertRecipients		NVARCHAR(512)
 DECLARE @DbMailProfile			SYSNAME
 
 -- you can change folowing variables according to your needs
-SET @AlertRecipients = '<your email addresses here>'
-SET @DbMailProfile	 = '<your database mail profile here>'	
+SET @AlertRecipients = '<your mail here>'
+SET @DbMailProfile	 = '<mail profile here>'	
 
 
 PRINT 'SQL Server Replication Health Monitoring - deployment of solution'
@@ -180,6 +181,9 @@ Execution example:
 AS
 BEGIN
 	SET NOCOUNT ON	
+
+	-- call replicaiton monitor refresh data system procedure
+	EXEC [sys].[sp_replmonitorrefreshjob] @iterations = 1
 
 	-- decision if alert to be risen
 	SELECT @p_RaiseAlert = COUNT(*) FROM [distribution].[dbo].[v_ReplicationMonitorData]
