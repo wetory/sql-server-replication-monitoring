@@ -13,9 +13,11 @@ Purpose: This procedure can be used for regular checking of replication status o
 	
 Author:	Tomas Rybnicky trybnicky@inwk.com
 Date of last update: 
-	v1.0.5 - 23.12.2019 - Monitoring refresh data procedure call added to procedure usp_ReplicationMonitor
+	v1.0.6 - 03.02.2020 - Condition for calculating @p_RaiseAlert output variable of usp_ReplicationMonitor procedure changed with static range of replication latency = 500
+						- Added script variable for specifying custom name od distribution database
 
 List of previous revisions:
+	v1.0.5 - 23.12.2019 - Monitoring refresh data procedure call added to procedure usp_ReplicationMonitor
 	v1.0.4 - 16.12.2019 - Log reader agent state checked and added to monitoring procedure results and @p_HTMLTableResults output parameter
 	v1.0.3 - 04.12.2019 - replication agent states columns added to view v_ReplicationMonitorData
 	v1.0.2 - 04.12.2019 - default value for parameter @p_HTMLTableResults added in stored procedure usp_ReplicationMonitor
@@ -43,9 +45,9 @@ BEGIN
 
 	-- decision if alert to be risen
 	SELECT @p_RaiseAlert = COUNT(*) FROM [distribution].[dbo].[v_ReplicationMonitorData]
-	WHERE ReplicationWarning <> 0				-- some threshold is broken
-		OR ReplicationStatus NOT IN (1, 3, 4)	-- 1 = Started, 3 = In progress, 4 = Idle 
-		OR LogReaderAgentState IN (2, 6)		-- 2 = succeeded (means that not running), 6 = failed. Log reader must be in progress or idle
+	WHERE (ReplicationWarning <> 0 AND ReplicationLatency > 500)	-- some threshold is broken
+		OR ReplicationStatus NOT IN (1, 3, 4)						-- 1 = Started, 3 = In progress, 4 = Idle 
+		OR LogReaderAgentState IN (2, 6)							-- 2 = succeeded (means that not running), 6 = failed. Log reader must be in progress or idle
 
 	-- result set for reporting - common resultset
 	IF @p_RaiseAlert <> 0 AND @p_SuppressResults = 0
@@ -79,7 +81,7 @@ BEGIN
 			ReplicationLatency,
 			LastSync AS LastSync
 		FROM v_ReplicationMonitorData
-		WHERE ReplicationWarning <> 0
+		WHERE (ReplicationWarning <> 0 AND ReplicationLatency > 500)
 			OR ReplicationStatus NOT IN (1, 3, 4)
 			OR LogReaderAgentState IN (2, 6)
 	END
@@ -144,7 +146,7 @@ BEGIN
 						ReplicationLatency,
 						LastSync AS LastSync
 					FROM v_ReplicationMonitorData
-					WHERE ReplicationWarning <> 0
+					WHERE (ReplicationWarning <> 0 AND ReplicationLatency > 500)
 						OR ReplicationStatus NOT IN (1, 3, 4)
 						OR LogReaderAgentState IN (2, 6)
 					) AS d

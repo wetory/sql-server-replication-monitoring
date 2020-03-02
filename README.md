@@ -105,6 +105,7 @@ I’m assuming only following possible issues:
 * [Failed to initialize sqlcmd library with error number -2147467259](https://blog.sqlauthority.com/2015/06/13/sql-server-login-failed-for-user-nt-authorityanonymous-logon/)
 
 ## Versions
+* v1.0.6 - Condition for calculating @p_RaiseAlert output variable of usp_ReplicationMonitor procedure changed with static range of replication latency = 500
 * v1.0.5 - Monitoring refresh data procedure call added to procedure usp_ReplicationMonitor
 * v1.0.4 - Log reader agent state checked and added to monitoring procedure results and @p_HTMLTableResults output parameter
 * v1.0.3 - replication agent states columns added to view v_ReplicationMonitorData
