@@ -10,9 +10,10 @@ It is creating following stuff in SQL Server instance:
 
 Author: Tomas Rybnicky 
 Date of last update: 
-	v1.0.5 - 23.12.2019 - Monitoring refresh data procedure call added to procedure usp_ReplicationMonitor
+	v1.0.6 - 03.02.2020 - Condition for calculating @p_RaiseAlert output variable of usp_ReplicationMonitor procedure changed with static range of replication latency = 500
 
 List of previous revisions:
+	v1.0.5 - 23.12.2019 - Monitoring refresh data procedure call added to procedure usp_ReplicationMonitor
 	v1.0.4 - 16.12.2019 - Log reader agent state checked and added to monitoring procedure results and @p_HTMLTableResults output parameter
 	v1.0.3 - 04.12.2019 - replication agent states columns added to view v_ReplicationMonitorData
 	v1.0.2 - 04.12.2019 - default value for parameter @p_HTMLTableResults added in stored procedure usp_ReplicationMonitor
@@ -25,14 +26,14 @@ SET NOCOUNT ON
 GO
 
 -- declare variables used in script
-DECLARE @ScriptVersion			NVARCHAR(16) = '1.0.5'
+DECLARE @ScriptVersion			NVARCHAR(16) = '1.0.6'
 DECLARE @Version				NUMERIC(18,10)
 DECLARE @AlertRecipients		NVARCHAR(512)
 DECLARE @DbMailProfile			SYSNAME
 
 -- you can change folowing variables according to your needs
-SET @AlertRecipients = '<your mail here>'
-SET @DbMailProfile	 = '<mail profile here>'	
+SET @AlertRecipients		= '<your mail here>'		-- put recipients email adresses that should recieve emails from SQL Agent job created
+SET @DbMailProfile			= '<mail profile here>'	-- put functional Database Mail profile name configured for actual instance
 
 
 PRINT 'SQL Server Replication Health Monitoring - deployment of solution'
@@ -135,7 +136,7 @@ SELECT
 	SUM(md.cur_latency) AS ReplicationLatency,
 	MAX(md.last_distsync) AS LastSync
 FROM Subscribers_CTE s
-	INNER JOIN [distribution].[dbo].[MSreplication_monitordata] md ON md.publication_id = s.PublicationId AND md.agent_id = s.AgentId
+	INNER JOIN [dbo].[MSreplication_monitordata] md ON md.publication_id = s.PublicationId AND md.agent_id = s.AgentId
 	INNER JOIN AgentsStates_CTE a ON a.PublisherServer = s.PublisherServer AND a.PublisherDatabase = s.PublisherDatabase
 GROUP BY 
 	s.PublicationId,
@@ -158,9 +159,11 @@ Purpose: This procedure can be used for regular checking of replication status o
 	
 Author:	Tomas Rybnicky trybnicky@inwk.com
 Date of last update: 
-	v1.0.4 - 16.12.2019 - Log reader agent state checked and added to monitoring procedure results and @p_HTMLTableResults output parameter
+	v1.0.6 - 03.02.2020 - Condition for calculating @p_RaiseAlert output variable of usp_ReplicationMonitor procedure changed with static range of replication latency = 500
 
 List of previous revisions:
+	v1.0.5 - 23.12.2019 - Monitoring refresh data procedure call added to procedure usp_ReplicationMonitor
+	v1.0.4 - 16.12.2019 - Log reader agent state checked and added to monitoring procedure results and @p_HTMLTableResults output parameter
 	v1.0.3 - 04.12.2019 - replication agent states columns added to view v_ReplicationMonitorData
 	v1.0.2 - 04.12.2019 - default value for parameter @p_HTMLTableResults added in stored procedure usp_ReplicationMonitor
 	v1.0.1 - 27.11.2019 - added possiblity to set autogrowth for restored database based on model database settings (RestoreDatabase stored procedure)
@@ -187,9 +190,9 @@ BEGIN
 
 	-- decision if alert to be risen
 	SELECT @p_RaiseAlert = COUNT(*) FROM [distribution].[dbo].[v_ReplicationMonitorData]
-	WHERE ReplicationWarning <> 0				-- some threshold is broken
-		OR ReplicationStatus NOT IN (1, 3, 4)	-- 1 = Started, 3 = In progress, 4 = Idle 
-		OR LogReaderAgentState IN (2, 6)		-- 2 = succeeded (means that not running), 6 = failed. Log reader must be in progress or idle
+	WHERE (ReplicationWarning <> 0 AND ReplicationLatency > 500)	-- some threshold is broken
+		OR ReplicationStatus NOT IN (1, 3, 4)						-- 1 = Started, 3 = In progress, 4 = Idle 
+		OR LogReaderAgentState IN (2, 6)							-- 2 = succeeded (means that not running), 6 = failed. Log reader must be in progress or idle
 
 	-- result set for reporting - common resultset
 	IF @p_RaiseAlert <> 0 AND @p_SuppressResults = 0
@@ -223,7 +226,7 @@ BEGIN
 			ReplicationLatency,
 			LastSync AS LastSync
 		FROM v_ReplicationMonitorData
-		WHERE ReplicationWarning <> 0
+		WHERE (ReplicationWarning <> 0 AND ReplicationLatency > 500)
 			OR ReplicationStatus NOT IN (1, 3, 4)
 			OR LogReaderAgentState IN (2, 6)
 	END
@@ -288,7 +291,7 @@ BEGIN
 						ReplicationLatency,
 						LastSync AS LastSync
 					FROM v_ReplicationMonitorData
-					WHERE ReplicationWarning <> 0
+					WHERE (ReplicationWarning <> 0 AND ReplicationLatency > 500)
 						OR ReplicationStatus NOT IN (1, 3, 4)
 						OR LogReaderAgentState IN (2, 6)
 					) AS d
@@ -305,20 +308,20 @@ GO
 BEGIN TRANSACTION
 
 -- get/set variable values from internal config table
-DECLARE @ReturnCode			INT
-DECLARE @ScriptVersion		NVARCHAR(16)
-DECLARE @AlertRecipients	VARCHAR(256) 
-DECLARE @DbMailProfile		SYSNAME
-DECLARE @JobName			NVARCHAR(MAX)
-DECLARE @JobDescription		NVARCHAR(MAX)
-DECLARE @TempCommandVar		NVARCHAR(MAX)
+DECLARE @ReturnCode				INT
+DECLARE @ScriptVersion			NVARCHAR(16)
+DECLARE @AlertRecipients		VARCHAR(256) 
+DECLARE @DbMailProfile			SYSNAME
+DECLARE @JobName				NVARCHAR(MAX)
+DECLARE @JobDescription			NVARCHAR(MAX)
+DECLARE @TempCommandVar			NVARCHAR(MAX)
 
-SET @ReturnCode			= 0
-SET @ScriptVersion		= (SELECT [Value] FROM #Config WHERE Name = 'ScriptVersion')
-SET @AlertRecipients	= (SELECT [Value] FROM #Config WHERE Name = 'AlertRecipients')
-SET @DbMailProfile		= (SELECT [Value] FROM #Config WHERE Name = 'DbMailProfile')
-SET @JobName			= 'Warning: Replication Health '
-SET @JobDescription		= N'Job runing stored procedure checking status and health of replication subscriptions where actual server used as distribution server. Version ' + @ScriptVersion + '. Created by trybnicky@inwk.com'
+SET @ReturnCode				= 0
+SET @ScriptVersion			= (SELECT [Value] FROM #Config WHERE Name = 'ScriptVersion')
+SET @AlertRecipients		= (SELECT [Value] FROM #Config WHERE Name = 'AlertRecipients')
+SET @DbMailProfile			= (SELECT [Value] FROM #Config WHERE Name = 'DbMailProfile')
+SET @JobName				= 'Warning: Replication Health '
+SET @JobDescription			= N'Job runing stored procedure checking status and health of replication subscriptions where actual server used as distribution server. Version ' + @ScriptVersion + '. Created by trybnicky@inwk.com'
 
 -- create job category if not exist
 IF NOT EXISTS (SELECT name FROM msdb.dbo.syscategories WHERE name=N'Replication monitoring' AND category_class=1)

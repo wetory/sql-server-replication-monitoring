@@ -1,1 +1,6 @@
 SQL Server Replication Monitoring - documentation.docx
+
+.vs
+
+*.ssmssln
+*.ssmssqlproj
