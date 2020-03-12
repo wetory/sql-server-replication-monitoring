@@ -9,10 +9,12 @@ It is creating following stuff in SQL Server instance:
 	- SQL Agent job in msdb database
 
 Author: Tomas Rybnicky 
-Date of last update: 
-	v1.0.6 - 03.02.2020 - Condition for calculating @p_RaiseAlert output variable of usp_ReplicationMonitor procedure changed with static range of replication latency = 500
+Date of last update:  
+	v1.0.7 - 12.03.2020 - Source for server information changed in view v_ReplicationMonitorData from [sys].[servers] to [dbo].[MSreplservers] in distribution database
 
 List of previous revisions:
+	v1.0.6 - 03.02.2020 - Condition for calculating @p_RaiseAlert output variable of usp_ReplicationMonitor procedure changed with static range of replication latency = 500
+						- Added script variable for specifying custom name od distribution database
 	v1.0.5 - 23.12.2019 - Monitoring refresh data procedure call added to procedure usp_ReplicationMonitor
 	v1.0.4 - 16.12.2019 - Log reader agent state checked and added to monitoring procedure results and @p_HTMLTableResults output parameter
 	v1.0.3 - 04.12.2019 - replication agent states columns added to view v_ReplicationMonitorData
@@ -81,15 +83,15 @@ WITH Subscribers_CTE (
 ) AS (
 	SELECT DISTINCT
 		ms.publication_id,
-		sp.name,
+		sp.srvname,
 		ms.publisher_db,
-		ss.name,
+		ss.srvname,
 		ms.subscriber_db,
 		ms.subscription_type,
 		ms.agent_id
-	FROM [distribution].[dbo].[MSsubscriptions] ms
-		INNER JOIN [master].[sys].[servers] sp ON ms.publisher_id = sp.server_id
-		INNER JOIN [master].[sys].[servers] ss ON ms.subscriber_id = ss.server_id
+	FROM [dbo].[MSsubscriptions] ms
+		INNER JOIN [dbo].[MSreplservers] sp ON ms.publisher_id = sp.srvid
+		INNER JOIN [dbo].[MSreplservers] ss ON ms.subscriber_id = ss.srvid
 	WHERE ms.subscriber_db <> 'virtual'
 ), AgentsStates_CTE (
 	PublisherServer,

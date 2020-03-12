@@ -12,11 +12,12 @@ Purpose: This procedure can be used for regular checking of replication status o
 	Output parameter @p_HTMLTableResults can be used for HTML formatted context, you can find HTML table element containing result set in it.
 	
 Author:	Tomas Rybnicky trybnicky@inwk.com
-Date of last update: 
-	v1.0.6 - 03.02.2020 - Condition for calculating @p_RaiseAlert output variable of usp_ReplicationMonitor procedure changed with static range of replication latency = 500
-						- Added script variable for specifying custom name od distribution database
+Date of last update:  
+	v1.0.7 - 12.03.2020 - Source for server information changed in view v_ReplicationMonitorData from [sys].[servers] to [dbo].[MSreplservers] in distribution database
 
 List of previous revisions:
+	v1.0.6 - 03.02.2020 - Condition for calculating @p_RaiseAlert output variable of usp_ReplicationMonitor procedure changed with static range of replication latency = 500
+						- Added script variable for specifying custom name od distribution database
 	v1.0.5 - 23.12.2019 - Monitoring refresh data procedure call added to procedure usp_ReplicationMonitor
 	v1.0.4 - 16.12.2019 - Log reader agent state checked and added to monitoring procedure results and @p_HTMLTableResults output parameter
 	v1.0.3 - 04.12.2019 - replication agent states columns added to view v_ReplicationMonitorData

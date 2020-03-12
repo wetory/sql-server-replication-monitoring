@@ -19,15 +19,15 @@ WITH Subscribers_CTE (
 ) AS (
 	SELECT DISTINCT
 		ms.publication_id,
-		sp.srvname,
+		sp.name,
 		ms.publisher_db,
-		ss.srvname,
+		ss.name,
 		ms.subscriber_db,
 		ms.subscription_type,
 		ms.agent_id
-	FROM [dbo].[MSsubscriptions] ms
-		INNER JOIN [dbo].[MSreplservers] sp ON ms.publisher_id = sp.srvid
-		INNER JOIN [dbo].[MSreplservers] ss ON ms.subscriber_id = ss.srvid
+	FROM [distribution].[dbo].[MSsubscriptions] ms
+		INNER JOIN [master].[sys].[servers] sp ON ms.publisher_id = sp.server_id
+		INNER JOIN [master].[sys].[servers] ss ON ms.subscriber_id = ss.server_id
 	WHERE ms.subscriber_db <> 'virtual'
 ), AgentsStates_CTE (
 	PublisherServer,
